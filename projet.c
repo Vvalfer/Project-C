@@ -153,12 +153,22 @@ int soustraction(BigBinary *a, BigBinary *b, BigBinary *res) {
     return 0;
 }
 
+int convertirEnDecimal(BigBinary nb) { // a degager apres test
+    int decimal = 0;
+    for (int i = 0; i < nb.Taille; ++i) {
+        decimal = decimal * BASE + nb.Tdigits[i];
+    }
+    return decimal;
+}
+
 // Addition Thomas
 /* Ce que je pense --- Pour additionner : il faut que les tableaux soit de la même taille
  Etape 1 : mettre les poiteur à la même taille --> faire avec realloc
  Etape 2 : faire le calcul binaire de droite à gauche (faire attention aux retenues)
  */
-void addition(BigBinary *nb1, BigBinary *nb2) {
+
+
+int addition(BigBinary *nb1, BigBinary *nb2) {  // j'ai changer le type de void a int pour pouvoir renvoyer un code d'erreur si besoin
     int maxlen; // Initialisation de la longueur maximale
     int retenue = 0; // Initialisation de la retenue, pour utiliser plus tard dans le calcul
 
@@ -196,21 +206,16 @@ void addition(BigBinary *nb1, BigBinary *nb2) {
         retenue = s / 2; // Nouvelle retenue en fonction du résultat précédent.
     }
     somme.Tdigits[0] = retenue;
+
+    // ici il faudrait renvoyer le resultat et faire affichage en dehors de la fonction 
     printf("\nRésultat de l'addition : "); // Affichage du résultat
     afficheBigBinary(somme);
+    printf("Valeur en décimal : %d\n", convertirEnDecimal(somme)); // Affichage en décimal pour vérification
     libereBigBinary(&somme);
 }
 
-int convertirEnDecimal(BigBinary nb) { // a degager apres test
-    int decimal = 0;
-    for (int i = 0; i < nb.Taille; ++i) {
-        decimal = decimal * BASE + nb.Tdigits[i];
-    }
-    return decimal;
-}
-
 int main() {
-    int bits1[] = {1, 1, 0, 0, 1};
+    int bits1[] = {1, 1, 0, 0, 1, 0, 1};
     int bits2[] = {1, 1, 0, 0, 1};
     int taille = sizeof(bits1) / sizeof(bits1[0]);
     int taille2 = sizeof(bits2) / sizeof(bits2[0]);
@@ -227,12 +232,10 @@ int main() {
 
     // test unitaire des valeurs avec affichage décimal pour véfication
     // (à dégager pour uniquement utiliser createBigBinaryFromStr)
-    printf("Valeur 1 initiale : \n");
-    afficheBigBinary(nb);
+    printf("Valeur 1 initiale : "); afficheBigBinary(nb);
     printf("-> Taille 1 : %d\n", nb.Taille);
-    printf("Valeur 2 initiale : \n");
+    printf("Valeur 2 initiale : "); afficheBigBinary(nb2);
     printf("-> Taille 2 : %d\n", nb2.Taille);
-    afficheBigBinary(nb2);
     printf("Valeur 1 en decimal : %d\n", convertirEnDecimal(nb));
     printf("Valeur 2 en decimal : %d\n", convertirEnDecimal(nb2));
 
@@ -245,6 +248,10 @@ int main() {
         afficheBigBinary(res);
         printf("Valeur en decimal : %d\n", convertirEnDecimal(res));
     }
+
+    // test de l'addition
+    addition(&nb, &nb2);
+
 
     // test de la comparaison
     if (inferieur(&nb, &nb2)) { // inférieur retourne 1
