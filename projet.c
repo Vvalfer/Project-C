@@ -153,7 +153,53 @@ int soustraction(BigBinary *a, BigBinary *b, BigBinary *res) {
     return 0;
 }
 
-// fonction d'addition (thomas)
+// Addition Thomas
+/* Ce que je pense --- Pour additionner : il faut que les tableaux soit de la même taille
+ Etape 1 : mettre les poiteur à la même taille --> faire avec realloc
+ Etape 2 : faire le calcul binaire de droite à gauche (faire attention aux retenues)
+ */
+void addition(BigBinary *nb1, BigBinary *nb2) {
+    int maxlen; // Initialisation de la longueur maximale
+    int retenue = 0; // Initialisation de la retenue, pour utiliser plus tard dans le calcul
+
+    // Etape 1 : Mettre les tableaux de la même taille
+    if (nb1->Taille > nb2->Taille) {// Si la taille de nb1 est supérieur à la taille de nb2, alors on met nb2 à la même taille
+        int ancienne = nb2->Taille; // Permet de garder la taille de nb2
+        nb2->Tdigits = realloc(nb2->Tdigits, nb1->Taille * sizeof(int)); // on met nb2 à la même taille
+        for (int i = nb1->Taille - 1; i >= 0; i--) { // on parcourt le tableau de droite à gauche pour ajouter des cases et décaller les anciennes
+            if (i >= nb1->Taille - ancienne) // Si i est supérieur à la taille de nb1 - la taille de nb2
+                nb2->Tdigits[i] = nb2->Tdigits[i - (nb1->Taille - ancienne)]; // alors on décale de position les bits
+            else
+                nb2->Tdigits[i] = 0; // On est dans les nouvelles cases ajoutées, donc on met 0
+        }
+        nb2->Taille = nb1->Taille;
+    } else if (nb2->Taille > nb1->Taille) { // On fait la même chose si la taille de nb2 est supérieur à nb1.
+        int ancienne = nb1->Taille;
+        nb1->Tdigits = realloc(nb1->Tdigits, nb2->Taille * sizeof(int));
+        for (int i = nb2->Taille - 1; i >= 0; i--) {
+            if (i >= nb2->Taille - ancienne)
+                nb1->Tdigits[i] = nb1->Tdigits[i - (nb2->Taille - ancienne)];
+            else
+                nb1->Tdigits[i] = 0;
+        }
+        nb1->Taille = nb2->Taille;
+    }
+
+    maxlen = nb1->Taille; // Maxlen est maintenant égal à la taille des deux nombres
+
+    BigBinary somme = initBigBinary(maxlen + 1, +1); // On initialise le résultat
+
+    // Étape 2 : On additionne les bits de droite à gauche
+    for (int i = maxlen - 1; i >= 0; i--) {
+        int s = nb1->Tdigits[i] + nb2->Tdigits[i] + retenue;
+        somme.Tdigits[i + 1] = s % 2;  // On récupère le reste de la division euclidienne, soit 1, soit 0.
+        retenue = s / 2; // Nouvelle retenue en fonction du résultat précédent.
+    }
+    somme.Tdigits[0] = retenue;
+    printf("\nRésultat de l'addition : "); // Affichage du résultat
+    afficheBigBinary(somme);
+    libereBigBinary(&somme);
+}
 
 int convertirEnDecimal(BigBinary nb) { // a degager apres test
     int decimal = 0;
