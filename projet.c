@@ -161,6 +161,9 @@ int convertirEnDecimal(BigBinary nb) { // a degager apres test
     return decimal;
 }
 
+// louis fais modulo et euclide
+// thomas fais l'egyptien et exponentiel
+
 // Addition Thomas
 /* Ce que je pense --- Pour additionner : il faut que les tableaux soit de la même taille
  Etape 1 : mettre les poiteur à la même taille --> faire avec realloc
