@@ -442,5 +442,5 @@ int main() {
 }
 
 
-// louis fais modulo et euclide
+// louis fais modulo et euclide = OK
 // thomas fais l'egyptien et exponentiel
