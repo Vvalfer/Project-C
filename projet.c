@@ -78,8 +78,34 @@ void libereBigBinary(BigBinary *nb){
 }
 
 void divisePar2(BigBinary *nb) {
-    // fonction d'exemple a faire plus tard (pas mandatory)
+    // nombre vide ou 0
+    if (nb->Taille == 0 || nb->Signe == 0) {
+        return;
+    }
+
+    // 1. Réduction de la taille logique
+    // En binaire on supprime le bit de poids faible (tout à droite) divise par 2.
+    // Ex: 110 (6) -> 11 (3)
+    nb->Taille--;
+
+    // 2. Gestion du cas où le nombre devient 0 (si on avait Taille = 1)
+    if (nb->Taille == 0) {
+        nb->Signe = 0;
+        free(nb->Tdigits);
+        nb->Tdigits = NULL;
+        return;
+    }
+
+    // 3. Ajustement dynamique de la mémoire
+    int *tmp = realloc(nb->Tdigits, nb->Taille * sizeof(int));
+    if (tmp != NULL) {
+        nb->Tdigits = tmp;
+    }
 }
+
+// ---------------------------------------------------
+//* Phase 1 : Comparaison, Soustraction, Addition *//
+// ---------------------------------------------------
 
 // retourne -1 si a < b, 0 si a == b, 1 si a > b
 int compareBigBinary(const BigBinary *a, const BigBinary *b) {
@@ -153,6 +179,183 @@ int soustraction(BigBinary *a, BigBinary *b, BigBinary *res) {
     return 0;
 }
 
+// L update : j'ai ajusté ta fonction d'addition pour qu'elle suive la même logique que la soustraction,
+// en utilisant des boucles similaires, et en renvoyant le résultat via un pointeur proprement pour utiliser le resultat ailleurs 
+// (on en a besoin pour la phase 2)
+// Addition Thomas
+int addition(BigBinary *nb1, BigBinary *nb2, BigBinary *res) {
+    // 1. Détermination de la taille nécessaire (max + 1 pour la retenue)
+    int maxTaille = (nb1->Taille > nb2->Taille) ? nb1->Taille : nb2->Taille;
+    int n = maxTaille + 1;
+
+    // Allocation du résultat
+    *res = initBigBinary(n, +1);
+    if (!res->Tdigits) return -1;
+
+    int ia = nb1->Taille - 1;
+    int ib = nb2->Taille - 1;
+    int retenue = 0;
+
+    // 2. Addition chiffre par chiffre à partir de la droite
+    for (int i = n - 1; i >= 0; --i) {
+        int av = (ia >= 0) ? nb1->Tdigits[ia] : 0;
+        int bv = (ib >= 0) ? nb2->Tdigits[ib] : 0;
+
+        int somme = av + bv + retenue;
+
+        res->Tdigits[i] = somme % 2;
+        retenue = somme / 2;
+
+        // Décrémentation des indices
+        if (ia >= 0) --ia;
+        if (ib >= 0) --ib;
+    }
+
+    // 3. Nettoyage des zéros à gauche
+    int first = 0;
+    while (first < res->Taille - 1 && res->Tdigits[first] == 0) {
+        ++first;
+    }
+    if (first > 0) {
+        memmove(res->Tdigits, res->Tdigits + first, (res->Taille - first) * sizeof(int));
+        res->Taille -= first;
+        res->Tdigits = realloc(res->Tdigits, res->Taille * sizeof(int));
+    }
+    return 0;
+}
+
+// ------------------------------------
+//* Phase 2 PGCD, Multiplication Egyptienne, Exponentielle *//
+// ------------------------------------
+
+// Copie profonde d'un BigBinary (allocation de nouvelle mémoire)
+BigBinary copieBigBinary(BigBinary *src) {
+    BigBinary dest = initBigBinary(src->Taille, src->Signe);
+    // On copie le contenu du tableau d'entiers
+    if (src->Tdigits != NULL && dest.Tdigits != NULL) {
+        memcpy(dest.Tdigits, src->Tdigits, src->Taille * sizeof(int));
+    }
+    return dest;
+}
+
+// Vérifie si un nombre est pair
+int estPair(BigBinary *nb) {
+    if (nb->Taille == 0) return 1; // 0 est pair
+    return (nb->Tdigits[nb->Taille - 1] == 0);
+}
+
+// Multiplie par 2 : Ajoute un 0 à la fin
+// Ex: 11 (3) -> 110 (6)
+void multipliePar2(BigBinary *nb) {
+    if (nb->Taille == 0 || nb->Signe == 0) return;
+    nb->Taille++;
+    // On agrandit le tableau pour accueillir le nouveau bit
+    int *tmp = realloc(nb->Tdigits, (nb->Taille + 1) * sizeof(int));
+    if (tmp != NULL) {
+        nb->Tdigits = tmp;
+        nb->Tdigits[nb->Taille] = 0; // Le nouveau bit de poids faible est 0
+    }
+}
+
+// Algorithme d'Euclide pour le PGCD
+BigBinary pgcd(BigBinary *a, BigBinary *b) {
+    // Copie pour ne pas modifier les originaux
+    BigBinary u = copieBigBinary(a);
+    BigBinary v = copieBigBinary(b);
+    int shift = 0;
+
+    // Gestion des cas u ou v est déjà nul
+    if (u.Taille == 0 || u.Signe == 0 || (u.Taille == 1 && u.Tdigits[0] == 0)) {
+        libereBigBinary(&u);
+        return v;
+    }
+    if (v.Taille == 0 || v.Signe == 0 || (v.Taille == 1 && v.Tdigits[0] == 0)) {
+        libereBigBinary(&v);
+        return u;
+    }
+
+    // 1: Diviser par 2 tant que u et v sont pairs
+    while (estPair(&u) && estPair(&v)) {
+        divisePar2(&u);
+        divisePar2(&v);
+        shift++;
+    }
+
+    // 2: Boucle principale
+    while (!(u.Taille == 0 || u.Signe == 0 || (u.Taille == 1 && u.Tdigits[0] == 0))) {
+        while (estPair(&u)) {
+            divisePar2(&u);
+        }
+        while (estPair(&v)) {
+            divisePar2(&v);
+        }
+
+        if (inferieur(&u, &v)) {
+            // Swap u et v pour avoir u >= v
+            BigBinary temp = u;
+            u = v;
+            v = temp;
+        }
+        // u = u - v
+        BigBinary diff = {0};
+        soustraction(&u, &v, &diff);
+
+        // Mise à jour de u
+        libereBigBinary(&u);
+        u = diff;
+    }
+    // 3: Rétablir le facteur 2^shift
+    for (int i = 0; i < shift; i++) {
+        multipliePar2(&v);
+    }
+
+    // Nettoyage final
+    libereBigBinary(&u); // u est nul ici, mais on libère proprement la structure   
+    return v;
+}
+
+// Fonction Modulo
+BigBinary modulo(BigBinary *a, BigBinary *b) {
+    if (b->Taille == 0 || b->Signe == 0) { // Modulo par 0 n'est pas défini
+        BigBinary err = initBigBinary(0, 0);
+        return err;
+    }
+    
+    // 1. Copie de a pour le resultat initial
+    BigBinary r = copieBigBinary(a);
+    
+    // Si A < B, le modulo est A. On retourne directement la copie.
+    if (inferieur(&r, (BigBinary*)b)) {
+        return r;
+    }
+
+    // 2. Boucle principale : tant que r >= b
+    while (!inferieur(&r, (BigBinary*)b)) {
+        
+        BigBinary tempB = copieBigBinary(b);
+        int shift = r.Taille - tempB.Taille;
+        
+        if (shift > 0) {
+            for (int i = 0; i < shift; i++) {
+                multipliePar2(&tempB);
+            }
+        }
+        
+        if (inferieur(&r, &tempB)) {
+            divisePar2(&tempB);
+        }
+        
+        BigBinary diff = {0};
+        soustraction(&r, &tempB, &diff);
+        
+        libereBigBinary(&r);
+        r = diff;
+        
+        libereBigBinary(&tempB);
+    }   
+    return r;
+}
+
 int convertirEnDecimal(BigBinary nb) { // a degager apres test
     int decimal = 0;
     for (int i = 0; i < nb.Taille; ++i) {
@@ -161,65 +364,9 @@ int convertirEnDecimal(BigBinary nb) { // a degager apres test
     return decimal;
 }
 
-// louis fais modulo et euclide
-// thomas fais l'egyptien et exponentiel
-
-// Addition Thomas le bg
-/* Ce que je pense --- Pour additionner : il faut que les tableaux soit de la même taille
- Etape 1 : mettre les poiteur à la même taille --> faire avec realloc
- Etape 2 : faire le calcul binaire de droite à gauche (faire attention aux retenues)
- */
-
-
-int addition(BigBinary *nb1, BigBinary *nb2) {  // j'ai changer le type de void a int pour pouvoir renvoyer un code d'erreur si besoin
-    int maxlen; // Initialisation de la longueur maximale
-    int retenue = 0; // Initialisation de la retenue, pour utiliser plus tard dans le calcul
-
-    // Etape 1 : Mettre les tableaux de la même taille
-    if (nb1->Taille > nb2->Taille) {// Si la taille de nb1 est supérieur à la taille de nb2, alors on met nb2 à la même taille
-        int ancienne = nb2->Taille; // Permet de garder la taille de nb2
-        nb2->Tdigits = realloc(nb2->Tdigits, nb1->Taille * sizeof(int)); // on met nb2 à la même taille
-        for (int i = nb1->Taille - 1; i >= 0; i--) { // on parcourt le tableau de droite à gauche pour ajouter des cases et décaller les anciennes
-            if (i >= nb1->Taille - ancienne) // Si i est supérieur à la taille de nb1 - la taille de nb2
-                nb2->Tdigits[i] = nb2->Tdigits[i - (nb1->Taille - ancienne)]; // alors on décale de position les bits
-            else
-                nb2->Tdigits[i] = 0; // On est dans les nouvelles cases ajoutées, donc on met 0
-        }
-        nb2->Taille = nb1->Taille;
-    } else if (nb2->Taille > nb1->Taille) { // On fait la même chose si la taille de nb2 est supérieur à nb1.
-        int ancienne = nb1->Taille;
-        nb1->Tdigits = realloc(nb1->Tdigits, nb2->Taille * sizeof(int));
-        for (int i = nb2->Taille - 1; i >= 0; i--) {
-            if (i >= nb2->Taille - ancienne)
-                nb1->Tdigits[i] = nb1->Tdigits[i - (nb2->Taille - ancienne)];
-            else
-                nb1->Tdigits[i] = 0;
-        }
-        nb1->Taille = nb2->Taille;
-    }
-
-    maxlen = nb1->Taille; // Maxlen est maintenant égal à la taille des deux nombres
-
-    BigBinary somme = initBigBinary(maxlen + 1, +1); // On initialise le résultat
-
-    // Étape 2 : On additionne les bits de droite à gauche
-    for (int i = maxlen - 1; i >= 0; i--) {
-        int s = nb1->Tdigits[i] + nb2->Tdigits[i] + retenue;
-        somme.Tdigits[i + 1] = s % 2;  // On récupère le reste de la division euclidienne, soit 1, soit 0.
-        retenue = s / 2; // Nouvelle retenue en fonction du résultat précédent.
-    }
-    somme.Tdigits[0] = retenue;
-
-    // ici il faudrait renvoyer le resultat et faire affichage en dehors de la fonction 
-    printf("\nRésultat de l'addition : "); // Affichage du résultat
-    afficheBigBinary(somme);
-    printf("Valeur en décimal : %d\n", convertirEnDecimal(somme)); // Affichage en décimal pour vérification
-    libereBigBinary(&somme);
-}
-
 int main() {
-    int bits1[] = {1, 1, 0, 0, 1, 0, 1};
-    int bits2[] = {1, 1, 0, 0, 1};
+    int bits1[] = {1, 0, 1, 1, 0, 1, 0, 0};
+    int bits2[] = {1, 0, 0, 0, 1};
     int taille = sizeof(bits1) / sizeof(bits1[0]);
     int taille2 = sizeof(bits2) / sizeof(bits2[0]);
 
@@ -251,10 +398,15 @@ int main() {
         afficheBigBinary(res);
         printf("Valeur en decimal : %d\n", convertirEnDecimal(res));
     }
-
     // test de l'addition
-    addition(&nb, &nb2);
-
+    ret = addition(&nb, &nb2, &res);
+    if (ret != 0) {
+        printf("Addition impossible\n");
+    } else {
+        printf("Valeur apres addition : \n");
+        afficheBigBinary(res);
+        printf("Valeur en decimal : %d\n", convertirEnDecimal(res));
+    }
 
     // test de la comparaison
     if (inferieur(&nb, &nb2)) { // inférieur retourne 1
@@ -265,9 +417,30 @@ int main() {
         printf("nb > nb2\n");
     }
 
+    // test du pgcd
+    BigBinary rPGCD = pgcd(&nb, &nb2);
+    printf("Valeur du PGCD : \n");
+    afficheBigBinary(rPGCD);
+    printf("Valeur en decimal : %d\n", convertirEnDecimal(rPGCD));
+
+    // test du modulo
+    BigBinary rMod = modulo(&nb, &nb2);
+    printf("Valeur du Modulo nb %% nb2 : \n");
+    afficheBigBinary(rMod);
+    printf("Valeur en decimal : %d\n", convertirEnDecimal(rMod));
+
+    // test de la division par 2
+    divisePar2(&nb);
+    printf("Valeur apres division par 2 de nb1 : \n");
+    afficheBigBinary(nb);
+    printf("Valeur en decimal : %d\n", convertirEnDecimal(nb));
 
     libereBigBinary(&nb);
     libereBigBinary(&nb2);
     libereBigBinary(&res);
     return 0;
 }
+
+
+// louis fais modulo et euclide
+// thomas fais l'egyptien et exponentiel
