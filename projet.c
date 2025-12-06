@@ -363,10 +363,81 @@ int convertirEnDecimal(BigBinary nb) { // a degager apres test
     }
     return decimal;
 }
+// principe : Si A est pair, on divise A par 2 et on multiplie B par 2
+// Si A est impair, on divise A par 2, on multiplie B par 2 et on ajoute B au total.
+BigBinary Egyptienne(BigBinary *a, BigBinary *b){
+
+    BigBinary total = initBigBinary(0, 0);
+    BigBinary A = copieBigBinary(a);
+    BigBinary B = copieBigBinary(b);
+
+    while (!(A.Taille == 0 || A.Signe == 0 || (A.Taille == 1 && A.Tdigits[0] == 0))) { // tant que A est différent de 0
+        if (!estPair(&A)) {
+            BigBinary sum = {0};
+            if (addition(&total, &B, &sum) != 0) {
+                libereBigBinary(&total);
+                libereBigBinary(&A);
+                libereBigBinary(&B);
+                return initBigBinary(0, 0);
+            }
+            libereBigBinary(&total);
+            total = sum;
+        }
+        divisePar2(&A);
+        multipliePar2(&B);
+    }
+
+    libereBigBinary(&A);
+    libereBigBinary(&B);
+    return total;
+}
+
+BigBinary exponentielleModulaire(BigBinary *base, BigBinary *e, BigBinary *mod) {
+    // Si modulo invalide alors on retourne 0
+    if (mod->Taille == 0 || mod->Signe == 0) return initBigBinary(0, 0);
+
+    BigBinary result = initBigBinary(1, +1);
+    result.Tdigits[0] = 1;
+
+    // baseMod = base % mod
+    BigBinary baseMod = modulo(base, mod);
+
+    BigBinary e = copieBigBinary(e);
+
+    // si l'exposant = 0 alors on retourne 1 % mod
+    if (e.Taille == 0 || e.Signe == 0 || (e.Taille == 1 && e.Tdigits[0] == 0)) {
+        libereBigBinary(&e);
+        BigBinary r = modulo(&result, mod);
+        libereBigBinary(&result);
+        libereBigBinary(&baseMod);
+        return r;
+    }
+
+    while (!(e.Taille == 0 || e.Signe == 0 || (e.Taille == 1 && e.Tdigits[0] == 0))) {
+        if (!estPair(&e)) {
+            BigBinary prod = Egyptienne(&result, &baseMod);
+            BigBinary newRes = modulo(&prod, mod);
+            libereBigBinary(&prod);
+            libereBigBinary(&result);
+            result = newRes;
+        }
+        divisePar2(&e);
+
+        BigBinary sq = Egyptienne(&baseMod, &baseMod);
+        BigBinary newBase = modulo(&sq, mod);
+        libereBigBinary(&sq);
+        libereBigBinary(&baseMod);
+        baseMod = newBase;
+    }
+
+    libereBigBinary(&e);
+    libereBigBinary(&baseMod);
+    return result;
+}
 
 int main() {
-    int bits1[] = {1, 0, 1, 1, 0, 1, 0, 0};
-    int bits2[] = {1, 0, 0, 0, 1};
+    int bits1[] = {1, 0, 1, 1, 0};
+    int bits2[] = {1, 1, 0};
     int taille = sizeof(bits1) / sizeof(bits1[0]);
     int taille2 = sizeof(bits2) / sizeof(bits2[0]);
 
@@ -435,6 +506,21 @@ int main() {
     afficheBigBinary(nb);
     printf("Valeur en decimal : %d\n", convertirEnDecimal(nb));
 
+    // Test de la multiplication éyptienne
+    printf("Valeur après multiplication éyptienne: \n");
+    BigBinary test_egyptienne = Egyptienne(&nb, &nb2);
+    afficheBigBinary(test_egyptienne);
+    afficheBigBinary(nb);
+    afficheBigBinary(nb2);
+
+    // test de l'exponentielle modulaire
+    BigBinary test_exponentielle = exponentielleModulaire(&nb, &nb2, &rMod);
+    printf("résultat du l'expenentiel modulaire : \n");
+    afficheBigBinary(test_exponentielle);
+    afficheBigBinary(nb);
+    afficheBigBinary(nb2);
+    
+
     libereBigBinary(&nb);
     libereBigBinary(&nb2);
     libereBigBinary(&res);
@@ -443,4 +529,4 @@ int main() {
 
 
 // louis fais modulo et euclide = OK
-// thomas fais l'egyptien et exponentiel
+// thomas fais l'egyptien et exponentiel == OK BOYYYY
