@@ -402,26 +402,26 @@ BigBinary exponentielleModulaire(BigBinary *base, BigBinary *e, BigBinary *mod) 
     // baseMod = base % mod
     BigBinary baseMod = modulo(base, mod);
 
-    BigBinary e = copieBigBinary(e);
+    BigBinary eCopy = copieBigBinary(e);
 
     // si l'exposant = 0 alors on retourne 1 % mod
-    if (e.Taille == 0 || e.Signe == 0 || (e.Taille == 1 && e.Tdigits[0] == 0)) {
-        libereBigBinary(&e);
+    if (eCopy.Taille == 0 || eCopy.Signe == 0 || (eCopy.Taille == 1 && eCopy.Tdigits[0] == 0)) {
+        libereBigBinary(&eCopy);
         BigBinary r = modulo(&result, mod);
         libereBigBinary(&result);
         libereBigBinary(&baseMod);
         return r;
     }
 
-    while (!(e.Taille == 0 || e.Signe == 0 || (e.Taille == 1 && e.Tdigits[0] == 0))) {
-        if (!estPair(&e)) {
+    while (!(eCopy.Taille == 0 || eCopy.Signe == 0 || (eCopy.Taille == 1 && eCopy.Tdigits[0] == 0))) {
+        if (!estPair(&eCopy)) {
             BigBinary prod = Egyptienne(&result, &baseMod);
             BigBinary newRes = modulo(&prod, mod);
             libereBigBinary(&prod);
             libereBigBinary(&result);
             result = newRes;
         }
-        divisePar2(&e);
+        divisePar2(&eCopy);
 
         BigBinary sq = Egyptienne(&baseMod, &baseMod);
         BigBinary newBase = modulo(&sq, mod);
@@ -430,7 +430,7 @@ BigBinary exponentielleModulaire(BigBinary *base, BigBinary *e, BigBinary *mod) 
         baseMod = newBase;
     }
 
-    libereBigBinary(&e);
+    libereBigBinary(&eCopy);
     libereBigBinary(&baseMod);
     return result;
 }
@@ -500,26 +500,25 @@ int main() {
     afficheBigBinary(rMod);
     printf("Valeur en decimal : %d\n", convertirEnDecimal(rMod));
 
-    // test de la division par 2
-    divisePar2(&nb);
-    printf("Valeur apres division par 2 de nb1 : \n");
-    afficheBigBinary(nb);
-    printf("Valeur en decimal : %d\n", convertirEnDecimal(nb));
-
     // Test de la multiplication éyptienne
     printf("Valeur après multiplication éyptienne: \n");
     BigBinary test_egyptienne = Egyptienne(&nb, &nb2);
     afficheBigBinary(test_egyptienne);
-    afficheBigBinary(nb);
-    afficheBigBinary(nb2);
+    printf("Valeur en decimal : %d\n", convertirEnDecimal(test_egyptienne));
+    libereBigBinary(&test_egyptienne);
 
     // test de l'exponentielle modulaire
     BigBinary test_exponentielle = exponentielleModulaire(&nb, &nb2, &rMod);
     printf("résultat du l'expenentiel modulaire : \n");
     afficheBigBinary(test_exponentielle);
-    afficheBigBinary(nb);
-    afficheBigBinary(nb2);
+    printf("Valeur en decimal : %d\n", convertirEnDecimal(test_exponentielle));
+    libereBigBinary(&test_exponentielle);
     
+    // test de la division par 2
+    divisePar2(&nb);
+    printf("Valeur apres division par 2 de nb1 : \n");
+    afficheBigBinary(nb);
+    printf("Valeur en decimal : %d\n", convertirEnDecimal(nb));
 
     libereBigBinary(&nb);
     libereBigBinary(&nb2);
