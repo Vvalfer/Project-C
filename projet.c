@@ -436,11 +436,75 @@ BigBinary exponentielleModulaire(BigBinary *base, BigBinary *e, BigBinary *mod) 
 }
 
 int main() {
-    int bits1[] = {1, 0, 1, 1, 0};
+    // test de la création à partir d'une chaîne
+    char str1[256];
+    char str2[256];
+    char str3[256];
+    printf("--- Tests de la création et affichage de BigBinary ---\n");
+    printf("Entrez le premier nombre binaire: ");
+    scanf("%s", str1);
+    printf("Entrez le deuxième nombre binaire: ");
+    scanf("%s", str2);
+    printf("Entrez un exposant pour les tests d'exponentielle modulaire: ");
+    scanf("%s", str3);
+    printf("\n");
+    BigBinary userNum1 = createBigBinaryFromStr(str1);
+    BigBinary userNum2 = createBigBinaryFromStr(str2);
+    BigBinary userExp = createBigBinaryFromStr(str3);
+    printf("Premier nombre binaire: \n");
+    afficheBigBinary(userNum1);
+    printf("Deuxième nombre binaire: \n");
+    afficheBigBinary(userNum2);
+
+    printf("\n--- Tests des opérations sur des BigBinary ---\n");
+    // addition
+    BigBinary sum = {0};
+    if (addition(&userNum1, &userNum2, &sum) != 0) {
+        printf("Addition impossible\n");
+    } else {
+        printf("Résultat de l'addition : \n");
+        afficheBigBinary(sum);
+        libereBigBinary(&sum);
+    }
+    // soustraction
+    BigBinary diff = {0};
+    if (soustraction(&userNum1, &userNum2, &diff) != 0) {
+        printf("Soustraction impossible\n");
+    } else {
+        printf("Résultat de la soustraction : \n");
+        afficheBigBinary(diff);
+        libereBigBinary(&diff);
+    }
+    // pgcd
+    BigBinary gcd = pgcd(&userNum1, &userNum2);
+    printf("Résultat du PGCD : \n");
+    afficheBigBinary(gcd);
+    libereBigBinary(&gcd);
+    // modulo
+    BigBinary mod = modulo(&userNum1, &userNum2);
+    printf("Résultat du Modulo : \n");
+    afficheBigBinary(mod);
+    libereBigBinary(&mod);
+    // multiplication égyptienne
+    BigBinary egyptienne = Egyptienne(&userNum1, &userNum2);
+    printf("Résultat de la multiplication égyptienne : \n");
+    afficheBigBinary(egyptienne);
+    libereBigBinary(&egyptienne);
+    // exponentielle modulaire
+    BigBinary expMod = exponentielleModulaire(&userNum1, &userNum2, &userExp);
+    printf("Résultat de l'exponentielle modulaire : \n");
+    afficheBigBinary(expMod);
+    libereBigBinary(&expMod);
+    libereBigBinary(&userExp);
+
+    libereBigBinary(&userNum1);
+    libereBigBinary(&userNum2);
+
+    // Test de resultat des opérations avec des chiffres binaires convertibles en décimal facilement
+    int bits1[] = {1, 0};
     int bits2[] = {1, 1, 0};
     int taille = sizeof(bits1) / sizeof(bits1[0]);
     int taille2 = sizeof(bits2) / sizeof(bits2[0]);
-
     BigBinary nb = initBigBinary(taille, +1);
     BigBinary nb2 = initBigBinary(taille2, +1);
     BigBinary res = {0};
@@ -450,6 +514,8 @@ int main() {
     for (int i = 0; i < taille2; ++i) {
         nb2.Tdigits[i] =  bits2[i];
     }
+
+    printf("\n--- Tests des résultats des opérations sur des BigBinary (avec des petit entier convertibles en décimal facilement) ---\n");
 
     // test unitaire des valeurs avec affichage décimal pour véfication
     // (à dégager pour uniquement utiliser createBigBinaryFromStr)
@@ -462,13 +528,10 @@ int main() {
 
     // test de la soustraction
     int ret = soustraction(&nb, &nb2, &res);
-    if (ret != 0) {
-        printf("Soustraction impossible\n");
-    } else {
-        printf("Valeur apres soustraction : \n");
-        afficheBigBinary(res);
-        printf("Valeur en decimal : %d\n", convertirEnDecimal(res));
-    }
+    printf("Soustraction nb - nb2 : \n");
+    afficheBigBinary(res);
+    printf("Valeur en decimal : %d\n", convertirEnDecimal(res));
+    libereBigBinary(&res);
     // test de l'addition
     ret = addition(&nb, &nb2, &res);
     if (ret != 0) {
@@ -527,5 +590,14 @@ int main() {
 }
 
 
-// louis fais modulo et euclide = OK
-// thomas fais l'egyptien et exponentiel == OK BOYYYY
+// point à eclaircir pour la soutenance :
+// la création de BigBinary à partir d'une chaîne de caractères fonctionne bien et les résultats des opérations sont corrects.
+// Cependant, dans il apparait que les condition de verification de comparaison dans la soustraction ne retourne pas les erreurs attendu
+// la condition était donc géré de façon indépendante dans le main ce qui n'est pas optimal.
+// il faut donc revoir ce point pour pouvoir l'expliquer a la soutenance.
+
+// point à eclaircir 2 :
+// il faut eclaircir le fonctionnement de l'exponentielle modulaire et pourquoi il y a besoin d'un troisième grand entier binaire
+
+
+// enfin il faut réaliser les fonction de chiffrement et déchiffrement RSA en utilisant les fonctions déjà implémentées.
