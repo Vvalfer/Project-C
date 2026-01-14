@@ -27,7 +27,19 @@ BigBinary initBigBinary (int taille, int signe) {
     return nb;
 }
 
+// Vérifie qu'une chaîne ne contient que des '0' et des '1'
+int ValidBigBinaryChar(const char *str) {
+    if (str == NULL || strlen(str) == 0) return 0; // Chaîne vide invalide
+    for (int i = 0; str[i] != '\0'; i++) {
+        if (str[i] != '0' && str[i] != '1') {
+            return 0; // Caractère invalide trouvé
+        }
+    }
+    return 1; // Valide
+}
+
 // creation d'un nombre binaire de grande taille a partir d'une chaine
+// ajout d'une condition pour igogner les caracteres non binaires
 BigBinary createBigBinaryFromStr(const char *str) {
     BigBinary nb;
     int n = strlen(str);
@@ -108,15 +120,39 @@ void divisePar2(BigBinary *nb) {
 // ---------------------------------------------------
 
 // retourne -1 si a < b, 0 si a == b, 1 si a > b
+// retourne -1 si a < b, 0 si a == b, 1 si a > b
 int compareBigBinary(const BigBinary *a, const BigBinary *b) {
-    if (a->Taille < b->Taille) return -1;
-    if (a->Taille > b->Taille) return 1;
-
-    for (int i = 0; i < a->Taille; ++i) {
-        if (a->Tdigits[i] < b->Tdigits[i]) return -1;
-        if (a->Tdigits[i] > b->Tdigits[i]) return 1;
+    // 1. Trouver le début réel de A (ignorer les 0 au début)
+    int startA = 0;
+    while (startA < a->Taille - 1 && a->Tdigits[startA] == 0) {
+        startA++;
     }
-    return 0;
+
+    // 2. Trouver le début réel de B
+    int startB = 0;
+    while (startB < b->Taille - 1 && b->Tdigits[startB] == 0) {
+        startB++;
+    }
+
+    // 3. Calculer les tailles effectives (significatives)
+    int realSizeA = a->Taille - startA;
+    int realSizeB = b->Taille - startB;
+
+    // 4. Comparer les tailles effectives
+    if (realSizeA < realSizeB) return -1;
+    if (realSizeA > realSizeB) return 1;
+
+    // 5. Si les tailles sont égales, comparer chiffre par chiffre
+    // On part des indices startA et startB calculés plus haut
+    for (int i = 0; i < realSizeA; ++i) {
+        int valA = a->Tdigits[startA + i];
+        int valB = b->Tdigits[startB + i];
+
+        if (valA < valB) return -1;
+        if (valA > valB) return 1;
+    }
+
+    return 0; // Ils sont strictement égaux
 }
 
 // retourne 1 si a < b, 0 sinon
@@ -130,7 +166,7 @@ int egale(BigBinary *a, BigBinary *b) {
 
 int soustraction(BigBinary *a, BigBinary *b, BigBinary *res) {
     // si a <= b, retourne erreur
-    if (compareBigBinary(a, b) <= 0) {
+    if (compareBigBinary(a, b) < 0) {
         if (res->Tdigits != NULL) {
             libereBigBinary(res);
         } else {
@@ -245,15 +281,16 @@ int estPair(BigBinary *nb) {
 }
 
 // Multiplie par 2 : Ajoute un 0 à la fin
-// Ex: 11 (3) -> 110 (6)
 void multipliePar2(BigBinary *nb) {
     if (nb->Taille == 0 || nb->Signe == 0) return;
+    
     nb->Taille++;
-    // On agrandit le tableau pour accueillir le nouveau bit
-    int *tmp = realloc(nb->Tdigits, (nb->Taille + 1) * sizeof(int));
+    
+    int *tmp = realloc(nb->Tdigits, nb->Taille * sizeof(int));
+    
     if (tmp != NULL) {
         nb->Tdigits = tmp;
-        nb->Tdigits[nb->Taille] = 0; // Le nouveau bit de poids faible est 0
+        nb->Tdigits[nb->Taille - 1] = 0; 
     }
 }
 
@@ -435,22 +472,56 @@ BigBinary exponentielleModulaire(BigBinary *base, BigBinary *e, BigBinary *mod) 
     return result;
 }
 
+
+// ----------------- Partie 3 RSA  -----------------
+BigBinary chiffrement_RSA(BigBinary *message, BigBinary *e, BigBinary *n) {
+    if (!inferieur(message, n)) {
+        printf("Erreur : le message doit être strictement inférieur à n\n");
+        return initBigBinary(0, 0);
+    }
+
+    return exponentielleModulaire(message, e, n);
+}
+
+BigBinary dechiffrement_RSA(BigBinary *chiffre, BigBinary *d, BigBinary *n) {
+    if (chiffre->Taille == 0 || chiffre->Signe == 0) {
+        printf("Erreur : chiffre invalide\n");
+        return initBigBinary(0, 0);
+    }
+
+    return exponentielleModulaire(chiffre, d, n);
+}
 int main() {
-    // test de la création à partir d'une chaîne
+    // Variables pour les chaînes
     char str1[256];
     char str2[256];
     char str3[256];
+    
+    int saisieValide = 0;
     printf("--- Tests de la création et affichage de BigBinary ---\n");
-    printf("Entrez le premier nombre binaire: ");
-    scanf("%s", str1);
-    printf("Entrez le deuxième nombre binaire: ");
-    scanf("%s", str2);
-    printf("Entrez un exposant pour les tests d'exponentielle modulaire: ");
-    scanf("%s", str3);
+    do {
+        printf("Entrez le premier nombre binaire: ");
+        scanf("%s", str1);
+
+        printf("Entrez le deuxième nombre binaire: ");
+        scanf("%s", str2);
+
+        printf("Entrez un exposant pour les tests d'exponentielle modulaire: ");
+        scanf("%s", str3);
+
+        if (ValidBigBinaryChar(str1) && ValidBigBinaryChar(str2) && ValidBigBinaryChar(str3)) {
+            saisieValide = 1;
+        } else {
+            printf("\n/!\\ Erreur : Une ou plusieurs chaînes contiennent des caractères invalides.\n");
+        }
+
+    } while (saisieValide == 0);
+
     printf("\n");
     BigBinary userNum1 = createBigBinaryFromStr(str1);
     BigBinary userNum2 = createBigBinaryFromStr(str2);
     BigBinary userExp = createBigBinaryFromStr(str3);
+
     printf("Premier nombre binaire: \n");
     afficheBigBinary(userNum1);
     printf("Deuxième nombre binaire: \n");
@@ -496,12 +567,24 @@ int main() {
     afficheBigBinary(expMod);
     libereBigBinary(&expMod);
     libereBigBinary(&userExp);
+    // Chiffrement RSA
+    printf("Résultat du Chiffrement RSA : \n");
+    BigBinary rsaC = chiffrement_RSA(&userNum1, &userExp, &userNum2);
+    afficheBigBinary(rsaC);
+
+    // Déchiffrement RSA
+    printf("Résultat du Déchiffrement RSA (Test de la fonction) : \n");
+    BigBinary rsaM = dechiffrement_RSA(&rsaC, &userExp, &userNum2);
+    afficheBigBinary(rsaM);
+
+    libereBigBinary(&rsaC);
+    libereBigBinary(&rsaM);
 
     libereBigBinary(&userNum1);
     libereBigBinary(&userNum2);
 
     // Test de resultat des opérations avec des chiffres binaires convertibles en décimal facilement
-    int bits1[] = {1, 0};
+    int bits1[] = {1, 0, 0};
     int bits2[] = {1, 1, 0};
     int taille = sizeof(bits1) / sizeof(bits1[0]);
     int taille2 = sizeof(bits2) / sizeof(bits2[0]);
@@ -528,9 +611,13 @@ int main() {
 
     // test de la soustraction
     int ret = soustraction(&nb, &nb2, &res);
-    printf("Soustraction nb - nb2 : \n");
-    afficheBigBinary(res);
-    printf("Valeur en decimal : %d\n", convertirEnDecimal(res));
+    if (ret != 0) {
+        printf("Soustraction nb - nb2 : Impossible (A < B)\n");
+    } else {
+        printf("Soustraction nb - nb2 : \n");
+        afficheBigBinary(res);
+        printf("Valeur en decimal : %d\n", convertirEnDecimal(res));
+    }
     libereBigBinary(&res);
     // test de l'addition
     ret = addition(&nb, &nb2, &res);
@@ -576,6 +663,21 @@ int main() {
     afficheBigBinary(test_exponentielle);
     printf("Valeur en decimal : %d\n", convertirEnDecimal(test_exponentielle));
     libereBigBinary(&test_exponentielle);
+
+    // RSA Chiffrement
+    printf("Chiffrement RSA : \n");
+    BigBinary resRSA = chiffrement_RSA(&nb, &nb, &nb2);
+    afficheBigBinary(resRSA);
+    printf("Valeur en decimal : %d\n", convertirEnDecimal(resRSA));
+
+    // RSA Déchiffrement    
+    printf("Déchiffrement RSA : \n");
+    BigBinary resRSADec = dechiffrement_RSA(&resRSA, &nb, &nb2);
+    afficheBigBinary(resRSADec);
+    printf("Valeur en decimal : %d\n", convertirEnDecimal(resRSADec));
+
+    libereBigBinary(&resRSA);
+    libereBigBinary(&resRSADec);
     
     // test de la division par 2
     divisePar2(&nb);
