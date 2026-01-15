@@ -2,10 +2,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
-#define BASE 2
+#define BASE 2 // La base du nombre (2 pour binaire )
 
-// Creation d'une structure pour la..
-// ..Representation d'un nombre binaire de grande taille
+// Creation d'une structure pour la representation d'un nombre binaire de grande taille
 typedef struct {
     int *Tdigits;
     // creation d'un pointeur de tableau (dynamique) d'entiers 
@@ -29,13 +28,13 @@ BigBinary initBigBinary (int taille, int signe) {
 
 // Vérifie qu'une chaîne ne contient que des '0' et des '1'
 int ValidBigBinaryChar(const char *str) {
-    if (str == NULL || strlen(str) == 0) return 0; // Chaîne vide invalide
+    if (str == NULL || strlen(str) == 0) return 0; // Chaîne vide
     for (int i = 0; str[i] != '\0'; i++) {
         if (str[i] != '0' && str[i] != '1') {
-            return 0; // Caractère invalide trouvé
+            return 0; // Caractère autre que 1 ou 0 trouvé
         }
     }
-    return 1; // Valide
+    return 1;
 }
 
 // creation d'un nombre binaire de grande taille a partir d'une chaine
@@ -89,18 +88,15 @@ void libereBigBinary(BigBinary *nb){
     nb->Signe = 0;
 }
 
+// diviser par deux un binaire
+// principe : on supprime le bit de poids faible (tout à droite), exemple 110 -> 11
 void divisePar2(BigBinary *nb) {
-    // nombre vide ou 0
     if (nb->Taille == 0 || nb->Signe == 0) {
         return;
     }
-
-    // 1. Réduction de la taille logique
-    // En binaire on supprime le bit de poids faible (tout à droite) divise par 2.
-    // Ex: 110 (6) -> 11 (3)
     nb->Taille--;
 
-    // 2. Gestion du cas où le nombre devient 0 (si on avait Taille = 1)
+    // si taille devient 0
     if (nb->Taille == 0) {
         nb->Signe = 0;
         free(nb->Tdigits);
@@ -108,42 +104,38 @@ void divisePar2(BigBinary *nb) {
         return;
     }
 
-    // 3. Ajustement dynamique de la mémoire
+    // ajustement dynamique de la mémoire
     int *tmp = realloc(nb->Tdigits, nb->Taille * sizeof(int));
     if (tmp != NULL) {
         nb->Tdigits = tmp;
     }
 }
 
-// ---------------------------------------------------
-//* Phase 1 : Comparaison, Soustraction, Addition *//
-// ---------------------------------------------------
+
+// PHASE 1 : Comparaison, Soustraction, Addition
+
 
 // retourne -1 si a < b, 0 si a == b, 1 si a > b
-// retourne -1 si a < b, 0 si a == b, 1 si a > b
 int compareBigBinary(const BigBinary *a, const BigBinary *b) {
-    // 1. Trouver le début réel de A (ignorer les 0 au début)
-    int startA = 0;
+    int startA = 0; // Trouver le début réel de A (ignorer les 0 au début)
     while (startA < a->Taille - 1 && a->Tdigits[startA] == 0) {
         startA++;
     }
 
-    // 2. Trouver le début réel de B
+    // trouver le début réel de B
     int startB = 0;
     while (startB < b->Taille - 1 && b->Tdigits[startB] == 0) {
         startB++;
     }
 
-    // 3. Calculer les tailles effectives (significatives)
+    // calcul des tailles de A et B
     int realSizeA = a->Taille - startA;
     int realSizeB = b->Taille - startB;
 
-    // 4. Comparer les tailles effectives
     if (realSizeA < realSizeB) return -1;
     if (realSizeA > realSizeB) return 1;
 
-    // 5. Si les tailles sont égales, comparer chiffre par chiffre
-    // On part des indices startA et startB calculés plus haut
+    // si les tailles sont égales, comparer chiffre par chiffre
     for (int i = 0; i < realSizeA; ++i) {
         int valA = a->Tdigits[startA + i];
         int valB = b->Tdigits[startB + i];
@@ -152,7 +144,7 @@ int compareBigBinary(const BigBinary *a, const BigBinary *b) {
         if (valA > valB) return 1;
     }
 
-    return 0; // Ils sont strictement égaux
+    return 0; // si égaux
 }
 
 // retourne 1 si a < b, 0 sinon
@@ -165,7 +157,7 @@ int egale(BigBinary *a, BigBinary *b) {
 }
 
 int soustraction(BigBinary *a, BigBinary *b, BigBinary *res) {
-    // si a <= b, retourne erreur
+    // si a < b, retourne erreur
     if (compareBigBinary(a, b) < 0) {
         if (res->Tdigits != NULL) {
             libereBigBinary(res);
@@ -215,16 +207,10 @@ int soustraction(BigBinary *a, BigBinary *b, BigBinary *res) {
     return 0;
 }
 
-// L update : j'ai ajusté ta fonction d'addition pour qu'elle suive la même logique que la soustraction,
-// en utilisant des boucles similaires, et en renvoyant le résultat via un pointeur proprement pour utiliser le resultat ailleurs 
-// (on en a besoin pour la phase 2)
-// Addition Thomas
+// Addition de deux BigBinary
 int addition(BigBinary *nb1, BigBinary *nb2, BigBinary *res) {
-    // 1. Détermination de la taille nécessaire (max + 1 pour la retenue)
     int maxTaille = (nb1->Taille > nb2->Taille) ? nb1->Taille : nb2->Taille;
     int n = maxTaille + 1;
-
-    // Allocation du résultat
     *res = initBigBinary(n, +1);
     if (!res->Tdigits) return -1;
 
@@ -232,7 +218,7 @@ int addition(BigBinary *nb1, BigBinary *nb2, BigBinary *res) {
     int ib = nb2->Taille - 1;
     int retenue = 0;
 
-    // 2. Addition chiffre par chiffre à partir de la droite
+    // on additionne chiffre par chiffre à partir de la droite (technique mathématique)
     for (int i = n - 1; i >= 0; --i) {
         int av = (ia >= 0) ? nb1->Tdigits[ia] : 0;
         int bv = (ib >= 0) ? nb2->Tdigits[ib] : 0;
@@ -242,12 +228,11 @@ int addition(BigBinary *nb1, BigBinary *nb2, BigBinary *res) {
         res->Tdigits[i] = somme % 2;
         retenue = somme / 2;
 
-        // Décrémentation des indices
         if (ia >= 0) --ia;
         if (ib >= 0) --ib;
     }
 
-    // 3. Nettoyage des zéros à gauche
+    // On retire les 0 à gauche
     int first = 0;
     while (first < res->Taille - 1 && res->Tdigits[first] == 0) {
         ++first;
@@ -260,11 +245,9 @@ int addition(BigBinary *nb1, BigBinary *nb2, BigBinary *res) {
     return 0;
 }
 
-// ------------------------------------
-//* Phase 2 PGCD, Multiplication Egyptienne, Exponentielle *//
-// ------------------------------------
+// PHASE 2 : PGCD, Multiplication Egyptienne, Exponentielle
 
-// Copie profonde d'un BigBinary (allocation de nouvelle mémoire)
+// Copie d'un BigBinary (allocation de nouvelle mémoire)
 BigBinary copieBigBinary(BigBinary *src) {
     BigBinary dest = initBigBinary(src->Taille, src->Signe);
     // On copie le contenu du tableau d'entiers
@@ -283,11 +266,8 @@ int estPair(BigBinary *nb) {
 // Multiplie par 2 : Ajoute un 0 à la fin
 void multipliePar2(BigBinary *nb) {
     if (nb->Taille == 0 || nb->Signe == 0) return;
-    
     nb->Taille++;
-    
     int *tmp = realloc(nb->Tdigits, nb->Taille * sizeof(int));
-    
     if (tmp != NULL) {
         nb->Tdigits = tmp;
         nb->Tdigits[nb->Taille - 1] = 0; 
@@ -295,6 +275,7 @@ void multipliePar2(BigBinary *nb) {
 }
 
 // Algorithme d'Euclide pour le PGCD
+// exemple pgcd(1101, 101) = 1 (13 et 5 sont premiers entre eux);
 BigBinary pgcd(BigBinary *a, BigBinary *b) {
     // Copie pour ne pas modifier les originaux
     BigBinary u = copieBigBinary(a);
@@ -311,14 +292,13 @@ BigBinary pgcd(BigBinary *a, BigBinary *b) {
         return u;
     }
 
-    // 1: Diviser par 2 tant que u et v sont pairs
+    // Diviser par 2 tant que u et v sont pairs
     while (estPair(&u) && estPair(&v)) {
         divisePar2(&u);
         divisePar2(&v);
         shift++;
     }
 
-    // 2: Boucle principale
     while (!(u.Taille == 0 || u.Signe == 0 || (u.Taille == 1 && u.Tdigits[0] == 0))) {
         while (estPair(&u)) {
             divisePar2(&u);
@@ -328,7 +308,7 @@ BigBinary pgcd(BigBinary *a, BigBinary *b) {
         }
 
         if (inferieur(&u, &v)) {
-            // Swap u et v pour avoir u >= v
+            // echanger u et v pour que u >= v
             BigBinary temp = u;
             u = v;
             v = temp;
@@ -336,78 +316,66 @@ BigBinary pgcd(BigBinary *a, BigBinary *b) {
         // u = u - v
         BigBinary diff = {0};
         soustraction(&u, &v, &diff);
-
         // Mise à jour de u
         libereBigBinary(&u);
         u = diff;
     }
-    // 3: Rétablir le facteur 2^shift
+    // on remet le facteur de 2
     for (int i = 0; i < shift; i++) {
         multipliePar2(&v);
     }
-
-    // Nettoyage final
-    libereBigBinary(&u); // u est nul ici, mais on libère proprement la structure   
+    libereBigBinary(&u);
     return v;
 }
 
-// Fonction Modulo
+// Fonction Modulo, exemple modulo(1101, 101) = 11 (13 % 5 = 3), on retient que le reste de a / b
 BigBinary modulo(BigBinary *a, BigBinary *b) {
     if (b->Taille == 0 || b->Signe == 0) { // Modulo par 0 n'est pas défini
         BigBinary err = initBigBinary(0, 0);
         return err;
     }
     
-    // 1. Copie de a pour le resultat initial
     BigBinary r = copieBigBinary(a);
     
-    // Si A < B, le modulo est A. On retourne directement la copie.
+    // si A < B, le modulo est A.
     if (inferieur(&r, (BigBinary*)b)) {
         return r;
     }
-
-    // 2. Boucle principale : tant que r >= b
     while (!inferieur(&r, (BigBinary*)b)) {
-        
         BigBinary tempB = copieBigBinary(b);
         int shift = r.Taille - tempB.Taille;
-        
         if (shift > 0) {
             for (int i = 0; i < shift; i++) {
                 multipliePar2(&tempB);
             }
         }
-        
         if (inferieur(&r, &tempB)) {
             divisePar2(&tempB);
         }
-        
         BigBinary diff = {0};
         soustraction(&r, &tempB, &diff);
-        
         libereBigBinary(&r);
         r = diff;
-        
         libereBigBinary(&tempB);
     }   
     return r;
 }
 
-int convertirEnDecimal(BigBinary nb) { // a degager apres test
+// Conversion en décimal d'un binaire
+int convertirEnDecimal(BigBinary nb) {
     int decimal = 0;
     for (int i = 0; i < nb.Taille; ++i) {
         decimal = decimal * BASE + nb.Tdigits[i];
     }
     return decimal;
 }
+// Multiplication égyptienne de deux BigBinary
 // principe : Si A est pair, on divise A par 2 et on multiplie B par 2
 // Si A est impair, on divise A par 2, on multiplie B par 2 et on ajoute B au total.
 BigBinary Egyptienne(BigBinary *a, BigBinary *b){
-
     BigBinary total = initBigBinary(0, 0);
     BigBinary A = copieBigBinary(a);
     BigBinary B = copieBigBinary(b);
-
     while (!(A.Taille == 0 || A.Signe == 0 || (A.Taille == 1 && A.Tdigits[0] == 0))) { // tant que A est différent de 0
         if (!estPair(&A)) {
             BigBinary sum = {0};
@@ -423,24 +391,20 @@ BigBinary Egyptienne(BigBinary *a, BigBinary *b){
         divisePar2(&A);
         multipliePar2(&B);
     }
-
     libereBigBinary(&A);
     libereBigBinary(&B);
     return total;
 }
 
+// Exponentielle modulaire
+// principe : on fait l'exponetielle de la base puis le modulo du resultat avec mod. exemple : (base^e) % mod
 BigBinary exponentielleModulaire(BigBinary *base, BigBinary *e, BigBinary *mod) {
     // Si modulo invalide alors on retourne 0
     if (mod->Taille == 0 || mod->Signe == 0) return initBigBinary(0, 0);
-
     BigBinary result = initBigBinary(1, +1);
     result.Tdigits[0] = 1;
-
-    // baseMod = base % mod
     BigBinary baseMod = modulo(base, mod);
-
     BigBinary eCopy = copieBigBinary(e);
-
     // si l'exposant = 0 alors on retourne 1 % mod
     if (eCopy.Taille == 0 || eCopy.Signe == 0 || (eCopy.Taille == 1 && eCopy.Tdigits[0] == 0)) {
         libereBigBinary(&eCopy);
@@ -473,32 +437,41 @@ BigBinary exponentielleModulaire(BigBinary *base, BigBinary *e, BigBinary *mod) 
 }
 
 
-// ----------------- Partie 3 RSA  -----------------
+// PHASE 3 : RSA, chiffrement et déchiffrement
+
+// principe : le chiffrement RSA se fait en calculant le message^e mod n
+// la clé publique est composée de (e, n) et la clé privée de (d, n)
+// exemple : message = 1101, e = 11, n = 101 (5), le résultat est 11
 BigBinary chiffrement_RSA(BigBinary *message, BigBinary *e, BigBinary *n) {
     if (!inferieur(message, n)) {
         printf("Erreur : le message doit être strictement inférieur à n\n");
         return initBigBinary(0, 0);
     }
-
     return exponentielleModulaire(message, e, n);
 }
 
+// Déchiffrement 
+// Principe : le déchiffrement RSA se fait en calculant le chiffre^d mod n
+// la clé privée est composée de (d, n)
+// exemple : chiffre = 11, d = 101, n = 101, le résultat est 1101
 BigBinary dechiffrement_RSA(BigBinary *chiffre, BigBinary *d, BigBinary *n) {
     if (chiffre->Taille == 0 || chiffre->Signe == 0) {
         printf("Erreur : chiffre invalide\n");
         return initBigBinary(0, 0);
     }
-
     return exponentielleModulaire(chiffre, d, n);
 }
+
+// Programme principal
 int main() {
     // Variables pour les chaînes
     char str1[256];
     char str2[256];
     char str3[256];
     
+    // Vérirrification d'une entrée correcte
     int saisieValide = 0;
-    printf("--- Tests de la création et affichage de BigBinary ---\n");
+    printf("--- Tests de la création et affichage de BigBinary ---\n\n");
     do {
         printf("Entrez le premier nombre binaire: ");
         scanf("%s", str1);
@@ -512,7 +485,7 @@ int main() {
         if (ValidBigBinaryChar(str1) && ValidBigBinaryChar(str2) && ValidBigBinaryChar(str3)) {
             saisieValide = 1;
         } else {
-            printf("\n/!\\ Erreur : Une ou plusieurs chaînes contiennent des caractères invalides.\n");
+            printf("Erreur : Une ou plusieurs chaînes contiennent des caractères invalides.\n");
         }
 
     } while (saisieValide == 0);
@@ -528,58 +501,81 @@ int main() {
     afficheBigBinary(userNum2);
 
     printf("\n--- Tests des opérations sur des BigBinary ---\n");
+
+
     // addition
     BigBinary sum = {0};
     if (addition(&userNum1, &userNum2, &sum) != 0) {
         printf("Addition impossible\n");
+        printf("\n");
     } else {
         printf("Résultat de l'addition : \n");
         afficheBigBinary(sum);
         libereBigBinary(&sum);
+        printf("\n");
     }
+
     // soustraction
     BigBinary diff = {0};
     if (soustraction(&userNum1, &userNum2, &diff) != 0) {
         printf("Soustraction impossible\n");
+        printf("\n");
     } else {
         printf("Résultat de la soustraction : \n");
         afficheBigBinary(diff);
         libereBigBinary(&diff);
+        printf("\n");
     }
+
     // pgcd
     BigBinary gcd = pgcd(&userNum1, &userNum2);
     printf("Résultat du PGCD : \n");
     afficheBigBinary(gcd);
     libereBigBinary(&gcd);
+    printf("\n");
+
     // modulo
     BigBinary mod = modulo(&userNum1, &userNum2);
     printf("Résultat du Modulo : \n");
     afficheBigBinary(mod);
     libereBigBinary(&mod);
+    printf("\n");
+
     // multiplication égyptienne
     BigBinary egyptienne = Egyptienne(&userNum1, &userNum2);
     printf("Résultat de la multiplication égyptienne : \n");
     afficheBigBinary(egyptienne);
     libereBigBinary(&egyptienne);
+    printf("\n");
+
     // exponentielle modulaire
     BigBinary expMod = exponentielleModulaire(&userNum1, &userNum2, &userExp);
     printf("Résultat de l'exponentielle modulaire : \n");
     afficheBigBinary(expMod);
     libereBigBinary(&expMod);
     libereBigBinary(&userExp);
+    printf("\n");
+
     // Chiffrement RSA
+
+    // clé rsa 
+    BigBinary p = createBigBinaryFromStr("11111");
+    BigBinary q = createBigBinaryFromStr("111101");
+    BigBinary n = Egyptienne(&p, &q);
+
     printf("Résultat du Chiffrement RSA : \n");
     BigBinary rsaC = chiffrement_RSA(&userNum1, &userExp, &userNum2);
     afficheBigBinary(rsaC);
+    printf("\n");
 
     // Déchiffrement RSA
-    printf("Résultat du Déchiffrement RSA (Test de la fonction) : \n");
+    printf("Résultat du Déchiffrement RSA : \n");
     BigBinary rsaM = dechiffrement_RSA(&rsaC, &userExp, &userNum2);
     afficheBigBinary(rsaM);
+    printf("\n");
 
     libereBigBinary(&rsaC);
     libereBigBinary(&rsaM);
-
     libereBigBinary(&userNum1);
     libereBigBinary(&userNum2);
 
@@ -599,43 +595,54 @@ int main() {
     }
 
     printf("\n--- Tests des résultats des opérations sur des BigBinary (avec des petit entier convertibles en décimal facilement) ---\n");
+    printf("\n");
 
     // test unitaire des valeurs avec affichage décimal pour véfication
-    // (à dégager pour uniquement utiliser createBigBinaryFromStr)
     printf("Valeur 1 initiale : "); afficheBigBinary(nb);
     printf("-> Taille 1 : %d\n", nb.Taille);
+    printf("\n");
     printf("Valeur 2 initiale : "); afficheBigBinary(nb2);
     printf("-> Taille 2 : %d\n", nb2.Taille);
+    printf("\n");
     printf("Valeur 1 en decimal : %d\n", convertirEnDecimal(nb));
     printf("Valeur 2 en decimal : %d\n", convertirEnDecimal(nb2));
+    printf("\n");
 
     // test de la soustraction
     int ret = soustraction(&nb, &nb2, &res);
     if (ret != 0) {
         printf("Soustraction nb - nb2 : Impossible (A < B)\n");
+        printf("\n");
     } else {
         printf("Soustraction nb - nb2 : \n");
         afficheBigBinary(res);
         printf("Valeur en decimal : %d\n", convertirEnDecimal(res));
+        printf("\n");
     }
     libereBigBinary(&res);
+
     // test de l'addition
     ret = addition(&nb, &nb2, &res);
     if (ret != 0) {
         printf("Addition impossible\n");
+        printf("\n");
     } else {
         printf("Valeur apres addition : \n");
         afficheBigBinary(res);
         printf("Valeur en decimal : %d\n", convertirEnDecimal(res));
+        printf("\n");
     }
 
     // test de la comparaison
     if (inferieur(&nb, &nb2)) { // inférieur retourne 1
         printf("nb < nb2\n");
+        printf("\n");
     } else if (egale(&nb, &nb2)) { // égal retourne 1
         printf("nb == nb2\n");
+        printf("\n");
     } else { // inférieur et égal retournent 0
         printf("nb > nb2\n");
+        printf("\n");
     }
 
     // test du pgcd
@@ -643,12 +650,14 @@ int main() {
     printf("Valeur du PGCD : \n");
     afficheBigBinary(rPGCD);
     printf("Valeur en decimal : %d\n", convertirEnDecimal(rPGCD));
+    printf("\n");
 
     // test du modulo
     BigBinary rMod = modulo(&nb, &nb2);
     printf("Valeur du Modulo nb %% nb2 : \n");
     afficheBigBinary(rMod);
     printf("Valeur en decimal : %d\n", convertirEnDecimal(rMod));
+    printf("\n");
 
     // Test de la multiplication éyptienne
     printf("Valeur après multiplication éyptienne: \n");
@@ -656,6 +665,7 @@ int main() {
     afficheBigBinary(test_egyptienne);
     printf("Valeur en decimal : %d\n", convertirEnDecimal(test_egyptienne));
     libereBigBinary(&test_egyptienne);
+    printf("\n");
 
     // test de l'exponentielle modulaire
     BigBinary test_exponentielle = exponentielleModulaire(&nb, &nb2, &rMod);
@@ -663,18 +673,21 @@ int main() {
     afficheBigBinary(test_exponentielle);
     printf("Valeur en decimal : %d\n", convertirEnDecimal(test_exponentielle));
     libereBigBinary(&test_exponentielle);
+    printf("\n");
 
     // RSA Chiffrement
     printf("Chiffrement RSA : \n");
     BigBinary resRSA = chiffrement_RSA(&nb, &nb, &nb2);
     afficheBigBinary(resRSA);
     printf("Valeur en decimal : %d\n", convertirEnDecimal(resRSA));
+    printf("\n");
 
     // RSA Déchiffrement    
     printf("Déchiffrement RSA : \n");
     BigBinary resRSADec = dechiffrement_RSA(&resRSA, &nb, &nb2);
     afficheBigBinary(resRSADec);
     printf("Valeur en decimal : %d\n", convertirEnDecimal(resRSADec));
+    printf("\n");
 
     libereBigBinary(&resRSA);
     libereBigBinary(&resRSADec);
@@ -684,22 +697,10 @@ int main() {
     printf("Valeur apres division par 2 de nb1 : \n");
     afficheBigBinary(nb);
     printf("Valeur en decimal : %d\n", convertirEnDecimal(nb));
+    printf("\n");
 
     libereBigBinary(&nb);
     libereBigBinary(&nb2);
     libereBigBinary(&res);
     return 0;
 }
-
-
-// point à eclaircir pour la soutenance :
-// la création de BigBinary à partir d'une chaîne de caractères fonctionne bien et les résultats des opérations sont corrects.
-// Cependant, dans il apparait que les condition de verification de comparaison dans la soustraction ne retourne pas les erreurs attendu
-// la condition était donc géré de façon indépendante dans le main ce qui n'est pas optimal.
-// il faut donc revoir ce point pour pouvoir l'expliquer a la soutenance.
-
-// point à eclaircir 2 :
-// il faut eclaircir le fonctionnement de l'exponentielle modulaire et pourquoi il y a besoin d'un troisième grand entier binaire
-
-
-// enfin il faut réaliser les fonction de chiffrement et déchiffrement RSA en utilisant les fonctions déjà implémentées.
