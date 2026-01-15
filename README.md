@@ -16,21 +16,25 @@ Il permet de :
 Le projet utilise une seule structure principale :
 
 typedef struct {
+
     int *Tdigits; // tableau dynamique de chiffres binaires
+    
     int Taille;   // nombre de chiffres
+    
     int Signe;    // 1 = positif, -1 = négatif, 0 = nul
+    
 } BigBinary;
 
 
 ## Les principales fonctions incluent :
-### Création et gestion
 
+### Création et gestion
 - BigBinary initBigBinary(int taille, int signe) : Initialise un nombre binaire vide.
 - BigBinary createBigBinaryFromStr(const char *str) : Crée un BigBinary à partir d'une chaîne de '0' et '1'.
 - void libereBigBinary(BigBinary *nb) : Libère la mémoire d’un BigBinary.
 - void afficheBigBinary(BigBinary nb) : Affiche un BigBinary dans la console.
 
-  ### Opérations sur BigBinary
+### Opérations sur BigBinary
 - int addition(BigBinary *a, BigBinary *b, BigBinary *res) : Additionne deux BigBinary.
 - int soustraction(BigBinary *a, BigBinary *b, BigBinary *res) : Soustrait b de a.
 - int compareBigBinary(const BigBinary *a, const BigBinary *b) : Compare deux BigBinary.
