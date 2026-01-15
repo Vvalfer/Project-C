@@ -23,25 +23,27 @@ typedef struct {
 
 
 ## Les principales fonctions incluent :
-- Création et gestion
+### Création et gestion
+
 - BigBinary initBigBinary(int taille, int signe) : Initialise un nombre binaire vide.
 - BigBinary createBigBinaryFromStr(const char *str) : Crée un BigBinary à partir d'une chaîne de '0' et '1'.
 - void libereBigBinary(BigBinary *nb) : Libère la mémoire d’un BigBinary.
 - void afficheBigBinary(BigBinary nb) : Affiche un BigBinary dans la console.
-- Opérations sur BigBinary
+
+  ### Opérations sur BigBinary
 - int addition(BigBinary *a, BigBinary *b, BigBinary *res) : Additionne deux BigBinary.
 - int soustraction(BigBinary *a, BigBinary *b, BigBinary *res) : Soustrait b de a.
 - int compareBigBinary(const BigBinary *a, const BigBinary *b) : Compare deux BigBinary.
 - int inferieur(BigBinary *a, BigBinary *b) : Vérifie si a < b.
 - int egale(BigBinary *a, BigBinary *b) : Vérifie si a == b.
 
-## Opérations avancées
+### Opérations avancées
 - BigBinary pgcd(BigBinary *a, BigBinary *b) : Calcule le PGCD (Euclide binaire).
 - BigBinary modulo(BigBinary *a, BigBinary *b) : Calcule a % b.
 - BigBinary Egyptienne(BigBinary *a, BigBinary *b) : Multiplication égyptienne.
 - BigBinary exponentielleModulaire(BigBinary *base, BigBinary *e, BigBinary *mod) : Calcul (base^e) % mod.
 
-## RSA
+### RSA
 - BigBinary chiffrement_RSA(BigBinary *message, BigBinary *e, BigBinary *n) : Chiffre un message.
 - BigBinary dechiffrement_RSA(BigBinary *chiffre, BigBinary *d, BigBinary *n) : Déchiffre un message.
 
