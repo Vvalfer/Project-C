@@ -5,7 +5,7 @@
 Ce projet implémente une bibliothèque de manipulation de nombres binaires de grande taille (BigBinary) en C, ainsi que des opérations mathématiques avancées et le chiffrement RSA.
 
 Il permet de :
- - Représenter des nombres binaires dynamiquement avec une structure personnalisée.
+- Représenter des nombres binaires dynamiquement avec une structure personnalisée.
 - Effectuer des opérations sur des BigBinary : addition, soustraction, comparaison, multiplication égyptienne, division par 2, etc.
 - Calculer le PGCD, le modulo, et l'exponentiation modulaire.
 - Chiffrer et déchiffrer des messages avec l’algorithme RSA.
@@ -51,9 +51,11 @@ Compiler le code :
 
 gcc -o bigbinary_rsa projet.c
 
+
 ## Lancer le programme :
 
-./bigbinary_rsa
+*./bigbinary_rsa*
+
 Entrer les nombres binaires et l’exposant pour tester les opérations.
 Le programme affichera :
 - Les résultats de l’addition, soustraction, PGCD, modulo, multiplication égyptienne.
